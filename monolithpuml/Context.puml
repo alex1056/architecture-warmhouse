@@ -1,0 +1,19 @@
+@startuml
+title Теплый Дом диаграмма контекста
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+'Person(user, "User", "A user of the fitness club system")
+Person(admin, "Администратор", "Администратор управляет системой Теплый Дом")
+System(WarmHouseAPI, "Система Теплый Дом", "Система управляет температурой в домах")
+
+System_Ext(sensors, "Датчики", "Датчики в домах клиентов")
+System_Ext(temperatureApi, "Temperature API", "Внешнее API для получения температуры по локациям")
+
+Rel(admin,WarmHouseAPI,"Управляет установками датчиков")
+Rel(WarmHouseAPI,temperatureApi,"Получение температуры по локациям")
+Rel(WarmHouseAPI,sensors,"Датчики получают установки температуры")
+
+@enduml
