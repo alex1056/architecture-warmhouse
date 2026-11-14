@@ -1,0 +1,37 @@
+@startuml
+title Умный дом Диаграмма контейнеров
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "User", "Пользователи системы Умный дом")
+'Person(admin, "Administrator", "Администратор который управляет системой")
+System(SmartHouseSystem, "Smart House System", "Система Умный дом")
+
+Container_Boundary(SmartHouseSystem, "Smart House System") {
+  Container(WebApp, "Web Application", "Java, Spring", "Взаимодействие с пользователем")
+'  Container(MobileApp, "Mobile Application", "Kotlin, Swift", "Allows users to manage their membership")
+  Container(SmartHouseApp, "Smart House Service", "Java, Spring", "Бизнес логика регисрации устройств, автоматизации сценариев, обработки задач пользователей")
+  Container(TelemetryService, "Telemetry Service", "Java, Spring", "Наблюдения за датчиками и устройствами")
+  Container(TaskExecutorService, "Task Executor Service", "Java, Spring", "Исполнение задач на устройствах и датчиках")
+  Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, расписаний, телеметрии, статусов задач")
+  Container(Queue, "Queue", "Apache Kafka", "Очередь задач")
+}
+
+System_Ext(thirdPartyApi, "Датчики и устройства", "Внешние датчики и устройства")
+System_Ext(tempApi, "Temperature API", "Внешнее API для получения температуры в локациях")
+
+Rel(user, WebApp, "Введение новых устройств, внесение рассписаний автоматизации работы устройств")
+'Rel(admin, WebApp,"Manages the system")
+Rel(WebApp,SmartHouseApp,"Инсталляция новых устройств, Постановка предварительных задач автоматизации")
+Rel(TelemetryService,Database,"Запись наблюдений")
+Rel(TelemetryService,tempApi,"Получение температуры по локациям")
+Rel(TaskExecutorService,Database,"Получение настроек подключения к устройству, запись результатов")
+Rel(Queue,TaskExecutorService,"Получение задач")
+Rel(SmartHouseApp,Queue,"Постановка задач")
+Rel(WebApp,Database,"Получение пользователей, устройств, телеметрии")
+Rel(SmartHouseApp,Database,"Храниение устройств, сценариев работы с устройствами, задач и их статусов")
+'Rel(WebApp,api,"Fetches fitness data")
+Rel(TelemetryService,thirdPartyApi,"Получение состояния устройства/датчика")
+@enduml
