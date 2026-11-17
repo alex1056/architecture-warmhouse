@@ -1,0 +1,96 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "users" as users {
+  * id : UUID <<PK>>
+  --
+  * fio : VARCHAR
+  * login : VARCHAR
+  * password : VARCHAR
+  * active : BOOLEAN
+}
+
+entity "roles" as roles {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "user_roles" as user_roles {
+  * user_id : UUID <<PK, FK>>
+  * role_id : UUID <<PK, FK>>
+}
+
+entity "houses" as houses {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * address : VARCHAR
+}
+
+entity "device_types" as device_types {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "devices" as devices {
+  * id : UUID <<PK>>
+  --
+  * device_type_id : UUID <<FK>>
+  * house_id : UUID <<FK>>
+  * serial_number : VARCHAR
+  * status : BOOLEAN
+  * connect_params : JSONB
+  * active : BOOLEAN
+}
+
+entity "telemetry_data" as telemetry_data {
+  * id : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * status : VARCHAR
+  * timestamp : TIMESTAMPTZ
+}
+
+entity "temperature_locations" as temperature_locations {
+  * id : UUID <<PK>>
+  --
+  * house_id : UUID <<FK>>
+  * description : VARCHAR
+}
+
+entity "temperature_data" as temperature_data {
+  * id : UUID <<PK>>
+  --
+  * location_id : UUID <<FK>>
+  * value : NUMERIC
+  * timestamp : TIMESTAMPTZ
+}
+
+entity "tasks" as tasks {
+  * id : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * user_id : UUID <<FK>>
+  * new_status : VARCHAR
+  * completed : BOOLEAN
+  * timestamp : TIMESTAMPTZ
+}
+
+' Связи между таблицами
+users ||--o{ user_roles : "имеет"
+roles ||--o{ user_roles : "назначается"
+
+users ||--o{ houses : "владеет"
+houses ||--o{ devices : "содержит"
+device_types ||--o{ devices : "определяет тип"
+
+devices ||--o{ telemetry_data : "генерирует"
+houses ||--o{ temperature_locations : "включает"
+temperature_locations ||--o{ temperature_data : "фиксирует"
+
+devices ||--o{ tasks : "выполняет"
+users ||--o{ tasks : "создает"
+@enduml

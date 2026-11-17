@@ -5,7 +5,7 @@ top to bottom direction
 
 !includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
 
-Person(user, "Домовладелец", "Собственник дома")
+Person(user, "Домовладелец (User)", "Собственник дома")
 Person(admin, "Администратор", "Администратор управляет системой Теплый Дом")
 System(WarmHouseAPI, "Система Теплый Дом", "Система управляет температурой в домах")
 
