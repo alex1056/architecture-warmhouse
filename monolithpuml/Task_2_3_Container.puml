@@ -19,7 +19,7 @@ Container_Boundary(SmartHouseSystem, "Smart House System") {
   Container(TaskExecutor, "Исполнитель задач", "Java, Spring", "Выполнение задач пользователя")
   Container(TelemetryService, "Telemetry Service", "Java, Spring", "Наблюдения за датчиками и устройствами")
   Container(DeviceManagementService, "Device Management Service", "Java, Spring", "Управление устройствами, формирование задач для устройств")
-  Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, расписаний, телеметрии, статусов задач")
+  Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, телеметрии, статусов задач")
   Container(Queue, "Queue", "Apache Kafka", "Очередь задач")
 }
 

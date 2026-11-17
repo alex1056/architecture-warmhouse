@@ -1,0 +1,84 @@
+@startuml
+title SmartHouseSystem Web Application Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(SmartHouseSystem, "Система Умный дом") {
+  Container(WebApp, "Web Application", "Java, Spring", "Взаимодействие с пользователем")
+  Container(DeviceManagement, "Device managemet", "Java, Spring", "Управление устройствами")
+  Container(TaskExecutor, "Task Executor", "Java, Spring","Выполнение задач")
+  Container(Queue, "Queue", "Apache Kafka", "Очередь хранения задач")
+  Container(TelemetryService, "Telemetry Service", "Java, Spring", "Обработка телеметрии устройств и температуры в локациях")
+  Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, телеметрии, статусов задач")
+}
+
+Container(WebApp, "Web Application", "Java, Spring") {
+  Component(AuthController, "Auth Controller", "Обеспечивает аутентификацию и авторизацию пользователей")
+  Component(DeviceController, "Device Controller", "Обеспечивает регистрацию новых устройств, отправку команд устройствам, получение текущего состояния")
+  Component(TelemetryController, "Telemetry Controller", "Запрос телеметрии по устройствам")
+  Component(TelemetryApiClientWebApp, "Telemetry API Client", "Запрос телеметрии по устройствам из сервиса телеметрии")
+  Component(DeviceManagementApiClient, "Device Management API Client", "Обеспечивает взаимодействие с Device Management Service (управление устройствами)")
+  Component(RepositoryLayerWebApp, "Repository Layer", "Управление доступом пользователя")
+}
+
+
+Rel(TelemetryController,TelemetryApiClientWebApp,"Устройства пользователя")
+Rel(DeviceController,DeviceManagementApiClient,"Устройства пользователя")
+Rel(AuthController,RepositoryLayerWebApp,"Доступ, данные пользователя")
+
+Container(DeviceManagement, "Device managemet", "Java, Spring") {
+  Component(DeviceControllerManagement, "Device Controller Management", "Управление устройствами пользователей")
+  Component(СommandHandler, "Сommand Handler", "Обработчик команд")
+  Component(EventPublisher, "Event Publisher", "Публикация задачи в очередь")
+  Component(RepositoryLayerDeviceManagement, "Repository Layer", "Данные по устройству")
+}
+Rel(DeviceManagementApiClient,DeviceControllerManagement,"Управление устройствами")
+Rel(DeviceControllerManagement,СommandHandler,"Обработка команд")
+Rel(СommandHandler, EventPublisher,"Отправка задач в очередь")
+Rel(СommandHandler, RepositoryLayerDeviceManagement,"Активность, параметры подкл. к устройству, сохранение задачи")
+
+
+Container(TaskExecutor, "Task Executor", "Java, Spring") {
+  Component(EventConsumer, "Event Consumer", "Получение задач из очереди")
+  Component(DeviceApiClientTaskExecutor, "Device API Client", "Отправка заданий устройствам")
+  Component(StateManager, "State Manager", "Обработка задач и изменения статусов устройств")
+  Component(RepositoryLayerTaskExecutor, "Repository Layer", "Сохранение данных о статусах выполнения задач")
+}
+
+Rel(EventConsumer, StateManager,"Обработка команд и статусов")
+Rel(StateManager, DeviceApiClientTaskExecutor,"Отправка задачи на устройство")
+Rel(StateManager, RepositoryLayerTaskExecutor,"Сохранение статуса исполнения задачи")
+
+Container(Queue, "Queue", "Apache Kafka") {
+}
+Rel(EventPublisher, Queue,"Отправка задач в очередь")
+Rel(Queue, EventConsumer,"Получение задач из очереди")
+
+Container(TelemetryService, "Telemetry Service", "Java, Spring") {
+  Component(TelemetryDataController, "Telemetry Data Controller", "Получение телеметрии устройств")
+  Component(DeviceApiClientTelemetry, "Device API Client", "Опрос состояния устройств")
+  Component(TemperatureApiClientTelemetry, "Temperature Api Client", "Получение температуры по локациям")
+  Component(TelemetryServiceLayer, "Service Layer", "Бизнес логика")
+  Component(RepositoryLayerTelemetry, "Repository Layer", "Данные телеметрии")
+}
+Rel(TelemetryApiClientWebApp,TelemetryDataController,"Запрос данных телеметрии по устройствам")
+Rel(TelemetryDataController,TelemetryServiceLayer,"Запрос данных телеметрии по устройствам")
+Rel(TelemetryServiceLayer,RepositoryLayerTelemetry,"Запрос данных телеметрии по устройствам")
+Rel(TelemetryServiceLayer,DeviceApiClientTelemetry,"Бизнес логика запросов к устройствам")
+Rel(TelemetryServiceLayer, TemperatureApiClientTelemetry,"Бизнес логика запросов температуры")
+
+System_Ext(sensors, "Устройства", "Устройства в домах пользователей")
+System_Ext(temperatureApi, "Temperature API", "Внешнее API для получения температуры по локациям")
+
+Rel(DeviceApiClientTelemetry,sensors,"Запрос данных телеметрии по устройствам")
+Rel(TemperatureApiClientTelemetry,temperatureApi,"Запрос температуры по локациям")
+Rel(DeviceApiClientTaskExecutor,sensors,"Отпарвка задач устройствам")
+
+Rel(RepositoryLayerWebApp,Database,"Данные пользователя, список устройств, доступ")
+Rel(RepositoryLayerDeviceManagement,Database,"Работа с устройствами и задачами")
+Rel(RepositoryLayerTaskExecutor,Database,"Статусы задач")
+Rel(RepositoryLayerTelemetry,Database,"Хранение телеметрии и температуры")
+
+@enduml
