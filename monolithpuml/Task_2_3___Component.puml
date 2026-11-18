@@ -10,88 +10,66 @@ Person(user, "Пользователи")
 Container_Boundary(SmartHouseSystem, "Система Умный дом") {
   Container(spa, "Web-приложение", "React / TypeScript", "Интерфейс управления домом")
   Container(keycloak, "Keycloak", "Java, Quarkus, OIDC", "Регистрация, аутентификация и управление правами доступа")
-'  Container(WebApp, "Web Application", "Java, Spring", "Взаимодействие с пользователем")
-  Container(DeviceManagement, "Device managemet", "Java, Spring", "Управление устройствами")
-  Container(TaskExecutor, "Task Executor", "Java, Spring","Выполнение задач")
-  Container(Queue, "Queue", "Apache Kafka", "Очередь хранения задач")
-  Container(TelemetryService, "Telemetry Service", "Java, Spring", "Обработка телеметрии устройств")
-  Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, телеметрии, статусов задач")
+  ContainerDb(Database, "Database", "PostgreSQL", "Хранение пользователей, устройств, телеметрии, статусов задач")
+  ContainerQueue(Queue, "Queue", "Apache Kafka", "Очередь хранения задач")
+
+  Container_Boundary(DeviceManager, "Device Manager Service") {
+    Component(DeviceControllerManager, "Device Controller", "Java, Spring", "Управление устройствами пользователей")
+    Component(CommandHandler, "Command Handler", "Java, Spring", "Обработчик команд")
+    Component(EventPublisher, "Event Publisher", "Java, Spring", "Публикация задачи в очередь")
+    Component(RepositoryLayerDeviceManager, "Repository Layer", "Java, Spring", "Данные по устройствам и пользователям")
+  }
+
+  Container_Boundary(TaskExecutor, "Task Executor") {
+    Component(EventConsumer, "Event Consumer", "Java, Spring", "Получение задач из очереди")
+    Component(DeviceApiClientTaskExecutor, "Device API Client", "Java, Spring", "Отправка заданий устройствам")
+    Component(StateManager, "State Manager", "Java, Spring", "Обработка задач и изменение статусов устройств")
+    Component(RepositoryLayerTaskExecutor, "Repository Layer", "Java, Spring", "Сохранение данных о статусах выполнения задач")
+  }
+
+  Container_Boundary(TelemetryService, "Telemetry Service") {
+    Component(TelemetryDataController, "Telemetry Data Controller", "Java, Spring", "Получение телеметрии устройств")
+    Component(DeviceApiClientTelemetry, "Device API Client", "Java, Spring", "Опрос состояния устройств")
+    Component(TelemetryServiceLayer, "Service Layer", "Java, Spring", "Бизнес-логика")
+    Component(RepositoryLayerTelemetry, "Repository Layer", "Java, Spring", "Данные телеметрии")
+  }
 }
-
-Rel(user, spa, "Использует", "HTTPS")
-'Rel(spa, WebApp, "Отправляет запросы с JWT-токеном", "REST / JSON")
-Rel(spa, DeviceManagement, "Отправляет запросы с JWT-токеном", "REST / JSON")
-Rel(user, keycloak, "Регистрируется и входит в систему", "HTTPS")
-Rel(DeviceManagement, keycloak, "Проверяет подпись и права токена", "OIDC / JWKS")
-
-'Container(WebApp, "Web Application", "Java, Spring") {
-''  Component(AuthController, "Auth Controller", "Обеспечивает аутентификацию и авторизацию пользователей")
-'  Component(DeviceController, "Device Controller", "Обеспечивает регистрацию новых устройств, отправку команд устройствам, получение текущего состояния")
-'  Component(TelemetryController, "Telemetry Controller", "Запрос телеметрии по устройствам")
-'  Component(TelemetryApiClientWebApp, "Telemetry API Client", "Запрос телеметрии по устройствам из сервиса телеметрии")
-'  Component(DeviceManagementApiClient, "Device Management API Client", "Обеспечивает взаимодействие с Device Management Service (управление устройствами)")
-'  Component(RepositoryLayerWebApp, "Repository Layer", "Управление доступом пользователя")
-'}
-
-
-'Rel(TelemetryController,TelemetryApiClientWebApp,"Устройства пользователя")
-'Rel(DeviceController,DeviceManagementApiClient,"Устройства пользователя")
-'Rel(AuthController,RepositoryLayerWebApp,"Доступ, данные пользователя")
-
-Container(DeviceManagement, "Device managemet", "Java, Spring") {
-  Component(DeviceControllerManagement, "Device Controller Management", "Управление устройствами пользователей")
-  Component(СommandHandler, "Сommand Handler", "Обработчик команд")
-  Component(EventPublisher, "Event Publisher", "Публикация задачи в очередь")
-  Component(RepositoryLayerDeviceManagement, "Repository Layer", "Данные по устройству")
-}
-'Rel(DeviceManagementApiClient,DeviceControllerManagement,"Управление устройствами")
-Rel(DeviceControllerManagement,СommandHandler,"Обработка команд")
-Rel(СommandHandler, EventPublisher,"Отправка задач в очередь")
-Rel(СommandHandler, RepositoryLayerDeviceManagement,"Активность, параметры подкл. к устройству, сохранение задачи")
-
-
-Container(TaskExecutor, "Task Executor", "Java, Spring") {
-  Component(EventConsumer, "Event Consumer", "Получение задач из очереди")
-  Component(DeviceApiClientTaskExecutor, "Device API Client", "Отправка заданий устройствам")
-  Component(StateManager, "State Manager", "Обработка задач и изменения статусов устройств")
-  Component(RepositoryLayerTaskExecutor, "Repository Layer", "Сохранение данных о статусах выполнения задач")
-}
-
-Rel(EventConsumer, StateManager,"Обработка команд и статусов")
-Rel(StateManager, DeviceApiClientTaskExecutor,"Отправка задачи на устройство")
-Rel(StateManager, RepositoryLayerTaskExecutor,"Сохранение статуса исполнения задачи")
-
-Container(Queue, "Queue", "Apache Kafka") {
-}
-Rel(EventPublisher, Queue,"Отправка задач в очередь")
-Rel(Queue, EventConsumer,"Получение задач из очереди")
-
-Container(TelemetryService, "Telemetry Service", "Java, Spring") {
-  Component(TelemetryDataController, "Telemetry Data Controller", "Получение телеметрии устройств")
-  Component(DeviceApiClientTelemetry, "Device API Client", "Опрос состояния устройств")
-'  Component(TemperatureApiClientTelemetry, "Temperature Api Client", "Получение температуры по локациям")
-  Component(TelemetryServiceLayer, "Service Layer", "Бизнес логика")
-  Component(RepositoryLayerTelemetry, "Repository Layer", "Данные телеметрии")
-}
-
-Rel(spa, TelemetryService, "Отправляет запросы с JWT-токеном", "REST / JSON")
-Rel(TelemetryService, keycloak, "Проверяет подпись и права токена", "OIDC / JWKS")
-'Rel(TelemetryApiClientWebApp,TelemetryDataController,"Запрос данных телеметрии по устройствам")
-Rel(TelemetryDataController,TelemetryServiceLayer,"Запрос данных телеметрии по устройствам")
-Rel(TelemetryServiceLayer,RepositoryLayerTelemetry,"Запрос данных телеметрии по устройствам")
-Rel(TelemetryServiceLayer,DeviceApiClientTelemetry,"Бизнес логика запросов к устройствам")
-'Rel(TelemetryServiceLayer, TemperatureApiClientTelemetry,"Бизнес логика запросов температуры")
 
 System_Ext(sensors, "Устройства", "Устройства в домах пользователей")
-'System_Ext(temperatureApi, "Temperature API", "Внешнее API для получения температуры по локациям")
 
-Rel(DeviceApiClientTelemetry,sensors,"Запрос данных телеметрии по устройствам")
-'Rel(TemperatureApiClientTelemetry,temperatureApi,"Запрос температуры по локациям")
-Rel(DeviceApiClientTaskExecutor,sensors,"Отпарвка задач устройствам")
+' Взаимодействие пользователя и фронтенда
+Rel(user, spa, "Использует", "HTTPS")
+Rel(user, keycloak, "Регистрируется и входит в систему", "HTTPS")
+Rel(spa, DeviceControllerManager, "Отправляет запросы с JWT-токеном", "REST / JSON")
+Rel(spa, TelemetryDataController, "Отправляет запросы с JWT-токеном", "REST / JSON")
 
-'Rel(RepositoryLayerWebApp,Database,"Данные пользователя, список устройств, доступ")
-Rel(RepositoryLayerDeviceManagement,Database,"Работа с устройствами и задачами")
-Rel(RepositoryLayerTaskExecutor,Database,"Статусы задач")
-Rel(RepositoryLayerTelemetry,Database,"Хранение телеметрии и температуры")
+' Проверка токенов
+Rel(DeviceManager, keycloak, "Проверяет подпись и права токена", "OIDC / JWKS")
+Rel(TelemetryService, keycloak, "Проверяет подпись и права токена", "OIDC / JWKS")
+
+' Поток Device Management
+Rel(DeviceControllerManager, CommandHandler, "Обработка команд и запросов")
+Rel(CommandHandler, EventPublisher, "Отправка задач в очередь")
+Rel(CommandHandler, RepositoryLayerDeviceManager, "Работа с устройствами и задачами")
+
+' Поток Kafka и Task Executor
+Rel(EventPublisher, Queue, "Отправка задач в очередь")
+Rel(Queue, EventConsumer, "Получение задач из очереди")
+Rel(EventConsumer, StateManager, "Обработка команд и статусов")
+Rel(StateManager, DeviceApiClientTaskExecutor, "Отправка задачи на устройство")
+Rel(StateManager, RepositoryLayerTaskExecutor, "Сохранение статуса исполнения задачи")
+
+' Поток Telemetry Service
+Rel(TelemetryDataController, TelemetryServiceLayer, "Запрос данных телеметрии")
+Rel(TelemetryServiceLayer, RepositoryLayerTelemetry, "Чтение и запись телеметрии")
+Rel(TelemetryServiceLayer, DeviceApiClientTelemetry, "Инициация опроса устройств")
+
+' Взаимодействие с устройствами и БД
+Rel(DeviceApiClientTelemetry, sensors, "Запрос данных телеметрии по устройствам")
+Rel(DeviceApiClientTaskExecutor, sensors, "Отправка задач устройствам")
+
+Rel(RepositoryLayerDeviceManager, Database, "Данные пользователей, устройств и задач")
+Rel(RepositoryLayerTaskExecutor, Database, "Статусы задач")
+Rel(RepositoryLayerTelemetry, Database, "Хранение телеметрии")
 
 @enduml

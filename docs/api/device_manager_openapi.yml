@@ -1,0 +1,379 @@
+openapi: 3.0.3
+info:
+  title: Smart Home - Device Management API
+  description: API микросервиса управления устройствами (Device Management) системы «Умный дом».
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Локальный сервер разработки
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Devices
+    description: Операции с устройствами пользователя и отправка команд
+
+paths:
+  /devices/{deviceId}:
+    get:
+      tags:
+        - Devices
+      summary: Получение информации об устройстве
+      description: Возвращает подробную информацию об устройстве, его типе и модулях.
+      operationId: getDeviceById
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Уникальный идентификатор устройства (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Информация об устройстве успешно получена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+              examples:
+                smartSwitchExample:
+                  summary: Умный выключатель с двумя модулями
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    houseId: "123e4567-e89b-12d3-a456-426614174000"
+                    deviceType: "Умный двухклавишный выключатель"
+                    serialNumber: "SN-2026-8841"
+                    status: true
+                    active: true
+                    modules:
+                      - id: "770e8400-e29b-41d4-a716-446655440111"
+                        name: "Реле канала 1 (Свет гостиная)"
+                      - id: "770e8400-e29b-41d4-a716-446655440112"
+                        name: "Реле канала 2 (Свет коридор)"
+        '401':
+          description: Пользователь не аутентифицирован (недействительный JWT-токен)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorizedExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 401
+                    error: "Unauthorized"
+                    message: "Отсутствует или истек токен доступа Keycloak"
+        '403':
+          description: Доступ запрещен (устройство принадлежит другому пользователю)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                forbiddenExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 403
+                    error: "Forbidden"
+                    message: "Нет прав на просмотр данного устройства"
+        '404':
+          description: Устройство с указанным ID не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFoundExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Устройство не найдено"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverErrorExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 500
+                    error: "Internal Server Error"
+                    message: "Внутренняя ошибка сервера при обращении к БД"
+
+  /devices/{deviceId}/status:
+    patch:
+      tags:
+        - Devices
+      summary: Обновление состояния устройства
+      description: Обновляет текущее логическое состояние устройства и признак активности в БД.
+      operationId: updateDeviceStatus
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Уникальный идентификатор устройства (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        description: Новые параметры состояния устройства
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceStatusRequest'
+            examples:
+              turnOffDevice:
+                summary: Перевод устройства в состояние выключено
+                value:
+                  status: false
+                  active: true
+      responses:
+        '200':
+          description: Состояние устройства успешно обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+              examples:
+                updatedDeviceExample:
+                  summary: Обновленные данные устройства
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    houseId: "123e4567-e89b-12d3-a456-426614174000"
+                    deviceType: "Умный двухклавишный выключатель"
+                    serialNumber: "SN-2026-8841"
+                    status: false
+                    active: true
+                    modules:
+                      - id: "770e8400-e29b-41d4-a716-446655440111"
+                        name: "Реле канала 1 (Свет гостиная)"
+        '400':
+          description: Некорректный формат запроса или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                badRequestExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Поле 'status' обязательно для заполнения"
+        '401':
+          description: Пользователь не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /devices/{deviceId}/commands:
+    post:
+      tags:
+        - Devices
+      summary: Отправка команды устройству
+      description: Создает задачу в БД и публикует событие в брокер сообщений Apache Kafka для сервиса Task Executor.
+      operationId: sendDeviceCommand
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Уникальный идентификатор устройства (UUID)
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        description: Целевое состояние или команда для устройства
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCommandRequest'
+            examples:
+              turnOnCommand:
+                summary: Команда на включение устройства
+                value:
+                  newStatus: "ON"
+      responses:
+        '202':
+          description: Команда принята и поставлена в очередь на выполнение
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceCommandResponse'
+              examples:
+                acceptedCommandExample:
+                  summary: Задача создана и отправлена в Kafka
+                  value:
+                    taskId: "990e8400-e29b-41d4-a716-446655440999"
+                    deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                    userId: "330e8400-e29b-41d4-a716-446655440333"
+                    newStatus: "ON"
+                    completed: false
+                    message: "Команда поставлена в очередь на выполнение"
+        '400':
+          description: Некорректный формат команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Пользователь не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Конфликт состояния (устройство деактивировано)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                conflictExample:
+                  value:
+                    timestamp: "2026-11-18T15:20:00Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Устройство неактивно и не может принимать команды"
+        '500':
+          description: Внутренняя ошибка сервера или ошибка публикации в Kafka
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ModuleDto:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    DeviceResponse:
+      type: object
+      required:
+        - id
+        - houseId
+        - deviceType
+        - serialNumber
+        - status
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        deviceType:
+          type: string
+        serialNumber:
+          type: string
+        status:
+          type: boolean
+        active:
+          type: boolean
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleDto'
+    UpdateDeviceStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: boolean
+        active:
+          type: boolean
+    DeviceCommandRequest:
+      type: object
+      required:
+        - newStatus
+      properties:
+        newStatus:
+          type: string
+          minLength: 1
+          maxLength: 50
+    DeviceCommandResponse:
+      type: object
+      required:
+        - taskId
+        - deviceId
+        - userId
+        - newStatus
+        - completed
+        - message
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        newStatus:
+          type: string
+        completed:
+          type: boolean
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

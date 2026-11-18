@@ -1,0 +1,95 @@
+asyncapi: '2.6.0'
+info:
+  title: Smart Home - Task Executor Consumer API
+  version: '1.0.0'
+  description: |
+    Спецификация асинхронного консьюмера (Event Consumer) микросервиса Task Executor.
+    Описывает контракт получения и обработки задач на управление устройствами 
+    из брокера сообщений Apache Kafka.
+
+servers:
+  development:
+    url: localhost:9092
+    protocol: kafka
+    description: Локальный брокер Apache Kafka для разработки и тестирования
+
+defaultContentType: application/json
+
+channels:
+  smart-home.device.tasks:
+    description: Топик Kafka, из которого сервис Task Executor вычитывает задачи для устройств
+    bindings:
+      kafka:
+        topic: smart-home.device.tasks
+        partitions: 3
+        replicas: 1
+    subscribe:
+      summary: Получение задачи из топика Kafka для выполнения
+      description: |
+        Компонент Event Consumer вычитывает сообщение из топика smart-home.device.tasks, 
+        передает его в State Manager для отправки команды на устройство и обновляет статус задачи в БД.
+      operationId: consumeDeviceTask
+      bindings:
+        kafka:
+          groupId:
+            type: string
+            enum:
+              - task-executor-consumer-group
+      message:
+        $ref: '#/components/messages/DeviceTaskReceivedEvent'
+
+components:
+  messages:
+    DeviceTaskReceivedEvent:
+      name: DeviceTaskReceivedEvent
+      title: Входящее событие задачи для устройства
+      summary: Содержит параметры задачи, полученные из очереди Kafka
+      contentType: application/json
+      bindings:
+        kafka:
+          key:
+            type: string
+            format: uuid
+            description: Ключ партиционирования Kafka (deviceId)
+      payload:
+        $ref: '#/components/schemas/DeviceTaskPayload'
+      examples:
+        - name: turnOnSwitchTaskReceived
+          summary: Пример входящего сообщения на включение выключателя
+          payload:
+            taskId: "990e8400-e29b-41d4-a716-446655440999"
+            deviceId: "550e8400-e29b-41d4-a716-446655440000"
+            userId: "330e8400-e29b-41d4-a716-446655440333"
+            newStatus: "ON"
+            createdAt: "2026-11-18T15:50:00Z"
+
+  schemas:
+    DeviceTaskPayload:
+      type: object
+      description: Структура полезной нагрузки (JSON) задачи из топика Kafka
+      required:
+        - taskId
+        - deviceId
+        - userId
+        - newStatus
+        - createdAt
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор задачи (из таблицы tasks)
+        deviceId:
+          type: string
+          format: uuid
+          description: Идентификатор целевого устройства (из таблицы devices)
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя, создавшего задачу (из таблицы users)
+        newStatus:
+          type: string
+          description: Целевое состояние или команда для устройства (например, ON, OFF)
+        createdAt:
+          type: string
+          format: date-time
+          description: Метка времени создания задачи (ISO 8601)

@@ -1,0 +1,97 @@
+asyncapi: '2.6.0'
+info:
+  title: Smart Home - Device Tasks Event API
+  version: '1.0.0'
+  description: |
+    Спецификация асинхронного обмена событиями через брокер сообщений Apache Kafka.
+    Описывает контракт передачи задач на управление устройствами от микросервиса 
+    Device Management (Event Publisher) к микросервису Task Executor (Event Consumer).
+
+servers:
+  development:
+    url: localhost:9092
+    protocol: kafka
+    description: Локальный брокер Apache Kafka для разработки и тестирования
+
+defaultContentType: application/json
+
+channels:
+  smart-home.device.tasks:
+    description: Топик Kafka для передачи команд управления устройствами из очереди задач
+    bindings:
+      kafka:
+        topic: smart-home.device.tasks
+        partitions: 3
+        replicas: 1
+    publish:
+      summary: Публикация новой задачи на управление устройством
+      description: |
+        Компонент Event Publisher в сервисе Device Management отправляет сообщение в топик 
+        после создания записи в таблице tasks и проверки активности устройства.
+      operationId: publishDeviceTask
+      message:
+        $ref: '#/components/messages/DeviceTaskCreatedEvent'
+    subscribe:
+      summary: Получение задачи для исполнения на физическом устройстве
+      description: |
+        Компонент Event Consumer в сервисе Task Executor вычитывает задачу из топика, 
+        отправляет команду на физическое устройство и обновляет статус задачи в БД (таблица tasks).
+      operationId: consumeDeviceTask
+      message:
+        $ref: '#/components/messages/DeviceTaskCreatedEvent'
+
+components:
+  messages:
+    DeviceTaskCreatedEvent:
+      name: DeviceTaskCreatedEvent
+      title: Событие постановки задачи для устройства
+      summary: Содержит идентификатор задачи, целевого устройства, пользователя и новое состояние
+      contentType: application/json
+      bindings:
+        kafka:
+          key:
+            type: string
+            format: uuid
+            description: Ключ партиционирования Kafka (deviceId) для сохранения порядка команд одного устройства
+      payload:
+        $ref: '#/components/schemas/DeviceTaskPayload'
+      examples:
+        - name: turnOnSwitchTask
+          summary: Пример задачи на включение умного выключателя
+          payload:
+            taskId: "990e8400-e29b-41d4-a716-446655440999"
+            deviceId: "550e8400-e29b-41d4-a716-446655440000"
+            userId: "330e8400-e29b-41d4-a716-446655440333"
+            newStatus: "ON"
+            createdAt: "2026-11-18T15:50:00Z"
+
+  schemas:
+    DeviceTaskPayload:
+      type: object
+      description: Полезная нагрузка (JSON) сообщения о новой задаче (соответствует таблице tasks)
+      required:
+        - taskId
+        - deviceId
+        - userId
+        - newStatus
+        - createdAt
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор задачи (из таблицы tasks)
+        deviceId:
+          type: string
+          format: uuid
+          description: Идентификатор целевого устройства (из таблицы devices)
+        userId:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя, создавшего задачу (из таблицы users)
+        newStatus:
+          type: string
+          description: Целевое состояние или команда для устройства (например, ON, OFF)
+        createdAt:
+          type: string
+          format: date-time
+          description: Метка времени создания задачи (ISO 8601)
