@@ -1,18 +1,27 @@
 @startuml
-title SmartHouseSystem Web Application Component Diagram
+title "Система Умный дом" Component Diagram
 
 top to bottom direction
 
 !includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
 
+Person(user, "Пользователи")
+
 Container_Boundary(SmartHouseSystem, "Система Умный дом") {
+  Container(spa, "Web-приложение", "React / TypeScript", "Интерфейс управления домом")
+  Container(keycloak, "Keycloak", "Java, Quarkus, OIDC", "Регистрация, аутентификация и управление правами доступа")
   Container(WebApp, "Web Application", "Java, Spring", "Взаимодействие с пользователем")
   Container(DeviceManagement, "Device managemet", "Java, Spring", "Управление устройствами")
   Container(TaskExecutor, "Task Executor", "Java, Spring","Выполнение задач")
   Container(Queue, "Queue", "Apache Kafka", "Очередь хранения задач")
-  Container(TelemetryService, "Telemetry Service", "Java, Spring", "Обработка телеметрии устройств и температуры в локациях")
+  Container(TelemetryService, "Telemetry Service", "Java, Spring", "Обработка телеметрии устройств")
   Container(Database, "Database", "PostgreSQL", "Храние пользователей, устройств, телеметрии, статусов задач")
 }
+
+Rel(user, spa, "Использует", "HTTPS")
+Rel(spa, WebApp, "Отправляет запросы с JWT-токеном", "REST / JSON")
+Rel(user, keycloak, "Регистрируется и входит в систему", "HTTPS")
+Rel(WebApp, keycloak, "Проверяет подпись и права токена", "OIDC / JWKS")
 
 Container(WebApp, "Web Application", "Java, Spring") {
   Component(AuthController, "Auth Controller", "Обеспечивает аутентификацию и авторизацию пользователей")
@@ -59,7 +68,7 @@ Rel(Queue, EventConsumer,"Получение задач из очереди")
 Container(TelemetryService, "Telemetry Service", "Java, Spring") {
   Component(TelemetryDataController, "Telemetry Data Controller", "Получение телеметрии устройств")
   Component(DeviceApiClientTelemetry, "Device API Client", "Опрос состояния устройств")
-  Component(TemperatureApiClientTelemetry, "Temperature Api Client", "Получение температуры по локациям")
+'  Component(TemperatureApiClientTelemetry, "Temperature Api Client", "Получение температуры по локациям")
   Component(TelemetryServiceLayer, "Service Layer", "Бизнес логика")
   Component(RepositoryLayerTelemetry, "Repository Layer", "Данные телеметрии")
 }
@@ -67,13 +76,13 @@ Rel(TelemetryApiClientWebApp,TelemetryDataController,"Запрос данных 
 Rel(TelemetryDataController,TelemetryServiceLayer,"Запрос данных телеметрии по устройствам")
 Rel(TelemetryServiceLayer,RepositoryLayerTelemetry,"Запрос данных телеметрии по устройствам")
 Rel(TelemetryServiceLayer,DeviceApiClientTelemetry,"Бизнес логика запросов к устройствам")
-Rel(TelemetryServiceLayer, TemperatureApiClientTelemetry,"Бизнес логика запросов температуры")
+'Rel(TelemetryServiceLayer, TemperatureApiClientTelemetry,"Бизнес логика запросов температуры")
 
 System_Ext(sensors, "Устройства", "Устройства в домах пользователей")
-System_Ext(temperatureApi, "Temperature API", "Внешнее API для получения температуры по локациям")
+'System_Ext(temperatureApi, "Temperature API", "Внешнее API для получения температуры по локациям")
 
 Rel(DeviceApiClientTelemetry,sensors,"Запрос данных телеметрии по устройствам")
-Rel(TemperatureApiClientTelemetry,temperatureApi,"Запрос температуры по локациям")
+'Rel(TemperatureApiClientTelemetry,temperatureApi,"Запрос температуры по локациям")
 Rel(DeviceApiClientTaskExecutor,sensors,"Отпарвка задач устройствам")
 
 Rel(RepositoryLayerWebApp,Database,"Данные пользователя, список устройств, доступ")

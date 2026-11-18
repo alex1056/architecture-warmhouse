@@ -6,8 +6,8 @@ entity "users" as users {
   * id : UUID <<PK>>
   --
   * fio : VARCHAR
-  * login : VARCHAR
-  * password : VARCHAR
+  * keycloak_id : VARCHAR
+  * email: VARCHAR
   * active : BOOLEAN
 }
 
