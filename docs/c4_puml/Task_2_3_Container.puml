@@ -4,9 +4,7 @@ title Умный дом Диаграмма контейнеров
 top to bottom direction
 
 !includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
-'
-'Person(user, "User", "Пользователи системы Умный дом")
-'Person(admin, "Administrator", "Администратор который управляет системой")
+
 System(SmartHouseSystem, "Smart House System", "Система Умный дом")
 
 Boundary(users_group, "Аудитория системы", "Пользователи") {
@@ -31,7 +29,6 @@ Rel(WebApp,Database,"Получение пользователей, устрой
 Rel(TelemetryService,Database,"Запись наблюдений")
 Rel(user, WebApp, "Введение новых устройств, отправка команд, получение статистики")
 Rel(admin, WebApp,"Управляет ролями пользователей, доступы ко всем устройствам и телеметрии")
-'Rel(WebApp,SmartHouseApp,"Инсталляция новых устройств, Постановка предварительных задач автоматизации")
 Rel(TelemetryService,tempApi,"Получение температуры по локациям")
 Rel(DeviceManagementService,Database,"Работа с устройствами (добавить, изменить, удалить), хранение задач")
 Rel(DeviceManagementService,thirdPartyApi,"Исполнение задач на устройствах")
@@ -39,8 +36,5 @@ Rel(DeviceManagementService, Queue,"Отправка задач")
 Rel(Queue, TaskExecutor,"Получение задач")
 Rel(TaskExecutor, thirdPartyApi,"Отправка задач")
 Rel(TaskExecutor, "Database","Отчет по задачам")
-'Rel(SmartHouseApp,Queue,"Постановка задач")
-'Rel(SmartHouseApp,Database,"Получение пользовательского рассписания работы устройств, логирование назначенных задач и их статусов")
-'Rel(WebApp,api,"Fetches fitness data")
 Rel(TelemetryService,thirdPartyApi,"Получение состояния устройства/датчика")
 @enduml
