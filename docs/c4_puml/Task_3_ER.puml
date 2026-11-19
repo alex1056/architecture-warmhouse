@@ -1,0 +1,104 @@
+@startuml
+!theme plain
+hide circle
+skinparam linetype ortho
+
+entity "users" as users {
+  * **id** : UUID <<PK>>
+  --
+  * fio : VARCHAR
+  * keycloak_id : UUID <<UNIQUE>>
+  * email : VARCHAR
+  * active : BOOLEAN
+}
+
+entity "roles" as roles {
+  * **id** : UUID <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "user_roles" as user_roles {
+  * **user_id** : UUID <<PK, FK>>
+  * **role_id** : UUID <<PK, FK>>
+}
+
+entity "houses" as houses {
+  * **id** : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * address : VARCHAR
+}
+
+entity "device_types" as device_types {
+  * **id** : UUID <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "devices" as devices {
+  * **id** : UUID <<PK>>
+  --
+  * device_type_id : UUID <<FK>>
+  * house_id : UUID <<FK>>
+  * serial_number : VARCHAR
+  * status : BOOLEAN
+  * active : BOOLEAN
+}
+
+entity "modules" as modules {
+  * **id** : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * name : VARCHAR
+}
+
+entity "device_params" as device_params {
+  * **id** : UUID <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "device_param_values" as device_param_values {
+  * **device_id** : UUID <<PK, FK>>
+  * **device_param_id** : UUID <<PK, FK>>
+  --
+  * value : VARCHAR
+}
+
+entity "telemetry_data" as telemetry_data {
+  * **id** : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * status : VARCHAR
+  * created_at : TIMESTAMPTZ
+}
+
+entity "tasks" as tasks {
+  * **id** : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * user_id : UUID <<FK>>
+  * new_status : VARCHAR
+  * completed : BOOLEAN
+  executed_at : TIMESTAMPTZ
+}
+
+' Связи между сущностями
+users ||--o{ user_roles : "имеет"
+roles ||--o{ user_roles : "назначается"
+
+users ||--o{ houses : "владеет"
+houses ||--o{ devices : "содержит"
+device_types ||--o{ devices : "определяет тип"
+
+devices ||--o{ modules : "включает"
+devices ||--o{ telemetry_data : "генерирует"
+
+devices ||--o{ device_param_values : "имеет значения"
+device_params ||--o{ device_param_values : "определяет параметр"
+
+devices ||--o{ tasks : "получает задачи"
+users ||--o{ tasks : "создает"
+
+@enduml
